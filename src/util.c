@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "caso.h"
+#include "ulcd43.h"
 
 /**
  * Baud rates only include types found in Linux. The device also supports other baud rates.
@@ -251,31 +251,6 @@ ulcd_send_recv_ack_data(struct ulcd_t *ulcd, const char *data, int size, void *b
         printf("ulcd_recv_ack() failed: got %d bytes, expected %d\n", bytes_read, datasize);
         return -1;
     }
-
-    return 0;
-}
-
-int
-main(int argc, char** argv)
-{
-    struct ulcd_t *ulcd;
-
-    ulcd = ulcd_new();
-    ulcd->port = "/dev/ttyAMA0";
-    ulcd->baudrate = B115200;
-
-    if (ulcd_open_serial_port(ulcd)) {
-        return 2;
-    }
-    ulcd_set_serial_port_parameters(ulcd);
-
-    if (ulcd_gfx_cls(ulcd)) {
-        return 1;
-    }
-
-    test_touch_draw(ulcd);
-
-    ulcd_free(ulcd);
 
     return 0;
 }

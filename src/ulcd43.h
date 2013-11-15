@@ -37,6 +37,11 @@ struct baudtable_t {
  * Functions *
  *************/
 
+struct ulcd_t * ulcd_new(void);
+void ulcd_free(struct ulcd_t *ulcd);
+int ulcd_open_serial_port(struct ulcd_t *ulcd);
+void ulcd_set_serial_port_parameters(struct ulcd_t *ulcd);
+
 int ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column);
 
 int ulcd_touch_get(struct ulcd_t *ulcd, param_t type, param_t *status);
