@@ -1,5 +1,5 @@
-TESTS = check_touch
-check_PROGRAMS = check_touch
-check_touch_SOURCES = check_touch.c $(top_builddir)/src/ulcd43.h
-check_touch_CFLAGS = @CHECK_CFLAGS@
-check_touch_LDADD = $(top_builddir)/src/libulcd43.la @CHECK_LIBS@
+TESTS = check_ulcd
+check_PROGRAMS = check_ulcd
+check_ulcd_SOURCES = check_ulcd.c $(top_builddir)/src/ulcd43.h
+check_ulcd_CFLAGS = @CHECK_CFLAGS@
+check_ulcd_LDADD = $(top_builddir)/src/libulcd43.la @CHECK_LIBS@
