@@ -254,3 +254,16 @@ ulcd_send_recv_ack_data(struct ulcd_t *ulcd, const char *data, int size, void *b
 
     return 0;
 }
+
+int
+ulcd_send_recv_ack_word(struct ulcd_t *ulcd, const char *data, int size, param_t *param)
+{
+    char buffer[2];
+
+    if (ulcd_send_recv_ack_data(ulcd, data, size, buffer, 2)) {
+        return -1;
+    }
+
+    unpack_uint(param, buffer);
+    return 0;
+}

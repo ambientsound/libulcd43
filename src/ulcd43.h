@@ -44,6 +44,8 @@ void ulcd_set_serial_port_parameters(struct ulcd_t *ulcd);
 
 int ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column);
 
+int ulcd_touch_set_detect_region(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2);
+int ulcd_touch_set(struct ulcd_t *ulcd, param_t type);
 int ulcd_touch_get(struct ulcd_t *ulcd, param_t type, param_t *status);
 int ulcd_touch_get_event(struct ulcd_t *ulcd, struct touch_event_t *ev);
 
@@ -51,6 +53,7 @@ int ulcd_gfx_cls(struct ulcd_t *ulcd);
 int ulcd_gfx_filled_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, param_t color);
 int ulcd_gfx_polygon(struct ulcd_t *ulcd, color_t color, param_t points, ...);
 
+int ulcd_image_bitblt(struct ulcd_t *ulcd, struct point_t *point, param_t width, param_t height, const char *buffer);
 
 
 /***********************
@@ -200,6 +203,14 @@ int ulcd_gfx_polygon(struct ulcd_t *ulcd, color_t color, param_t points, ...);
 #define TOUCH_STATUS_PRESS 1
 #define TOUCH_STATUS_RELEASE 2
 #define TOUCH_STATUS_MOVING 3
+
+/*
+####################################
+###  5.9: Image Control Commands ###
+####################################
+*/
+
+#define BLIT_COM_TO_DISPLAY 0x0023
 
 /*
 ###############################

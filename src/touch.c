@@ -6,15 +6,57 @@
 extern char cmdbuf[4096];
 extern char recvbuf[2];
 
+
+/**
+ * Official API
+ */
+
+int
+ulcd_touch_set_detect_region(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2)
+{
+    int s = pack_uints(cmdbuf, 5, TOUCH_DETECT_REGION, p1->x, p1->y, p2->x, p2->y);
+    return ulcd_send_recv_ack(ulcd, cmdbuf, s);
+}
+
+int
+ulcd_touch_set(struct ulcd_t *ulcd, param_t type)
+{
+    int s = pack_uints(cmdbuf, 2, TOUCH_SET, type);
+    return ulcd_send_recv_ack(ulcd, cmdbuf, s);
+}
+
 int
 ulcd_touch_get(struct ulcd_t *ulcd, param_t type, param_t *status)
 {
-    pack_uints(cmdbuf, 2, TOUCH_GET, type);
-    if (ulcd_send_recv_ack_data(ulcd, cmdbuf, 4, &recvbuf, 2)) {
-        return -1;
-    }
-    unpack_uint(status, recvbuf);
-    return 0;
+    int s = pack_uints(cmdbuf, 2, TOUCH_GET, type);
+    return ulcd_send_recv_ack_word(ulcd, cmdbuf, s, status);
+}
+
+/**
+ * Initialize the panel's touch mode.
+ */
+int
+ulcd_touch_init(struct ulcd_t *ulcd)
+{
+    return ulcd_touch_set(ulcd, TOUCH_SET_MODE_INIT);
+}
+
+/**
+ * Disable the panel's touch mode.
+ */
+int
+ulcd_touch_disable(struct ulcd_t *ulcd)
+{
+    return ulcd_touch_set(ulcd, TOUCH_SET_MODE_DISABLE);
+}
+
+/**
+ * Disable the panel's touch mode.
+ */
+int
+ulcd_touch_reset(struct ulcd_t *ulcd)
+{
+    return ulcd_touch_set(ulcd, TOUCH_SET_MODE_RESET);
 }
 
 /**

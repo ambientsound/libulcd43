@@ -27,6 +27,23 @@ teardown(void)
  * Touch test case
  */
 
+START_TEST (test_touch_set_detect_region)
+{
+    struct point_t p1 = { 0, 0 };
+    struct point_t p2 = { 479, 271 };
+    ck_assert(0 == ulcd_touch_set_detect_region(ulcd, &p1, &p2));
+}
+END_TEST
+
+START_TEST (test_touch_set)
+{
+    param_t status;
+    ck_assert(0 == ulcd_touch_init(ulcd));
+    ck_assert(0 == ulcd_touch_reset(ulcd));
+    ck_assert(0 == ulcd_touch_disable(ulcd));
+}
+END_TEST
+
 START_TEST (test_touch_get)
 {
     param_t status;
@@ -47,6 +64,22 @@ START_TEST (test_touch_get_event)
 }
 END_TEST
 
+/**
+ * Image Control test case
+ */
+
+/*
+START_TEST (test_image_bitblt)
+{
+    #include "image.c"
+    struct point_t p;
+    p.x = 0;
+    p.y = 0;
+    ulcd_image_bitblt(ulcd, &p, 480, 272, image);
+}
+END_TEST
+*/
+
 Suite *
 ulcd_suite(void)
 {
@@ -55,9 +88,20 @@ ulcd_suite(void)
     /* Touch test case */
     TCase *tc_touch = tcase_create("Touch");
     tcase_add_unchecked_fixture(tc_touch, setup, teardown);
+    tcase_add_test(tc_touch, test_touch_set_detect_region);
+    tcase_add_test(tc_touch, test_touch_set);
     tcase_add_test(tc_touch, test_touch_get);
     tcase_add_test(tc_touch, test_touch_get_event);
     suite_add_tcase(s, tc_touch);
+
+    /* Image test case */
+    /*
+    TCase *tc_image = tcase_create("Image");
+    tcase_add_unchecked_fixture(tc_image, setup, teardown);
+    tcase_add_test(tc_image, test_image_bitblt);
+    tcase_set_timeout(tc_image, 60);
+    suite_add_tcase(s, tc_image);
+    */
 
     return s;
 }
