@@ -167,6 +167,8 @@ AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
+CHECK_CFLAGS = 
+CHECK_LIBS = -lcheck
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -270,7 +272,7 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-SUBDIRS = src
+SUBDIRS = src . tests
 dist_doc_DATA = README
 all: all-recursive
 

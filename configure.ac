@@ -2,6 +2,7 @@ AC_PREREQ([2.69])
 AC_INIT([ulcd43], [1.0], [kimtjen@gmail.com])
 LT_INIT
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_PATH_CHECK
 
 AC_CONFIG_SRCDIR([src/test.c])
 AC_CONFIG_HEADERS([src/config.h])
@@ -27,5 +28,6 @@ AC_CHECK_FUNCS([memset])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    tests/Makefile
 ])
 AC_OUTPUT

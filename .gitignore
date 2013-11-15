@@ -22,3 +22,5 @@ libtool
 ltmain.sh
 *.lo
 *.la
+
+tests/check_touch
