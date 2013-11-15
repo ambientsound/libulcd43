@@ -7,46 +7,38 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-/* Benchmarking */
-#include <time.h>
+#include "caso.h"
 
-/* Types */
-typedef unsigned int color_t;
-typedef unsigned int param_t;
-
-struct point_t {
-    unsigned int x;
-    unsigned int y;
+/**
+ * Baud rates only include types found in Linux. The device also supports other baud rates.
+ */
+struct baudtable_t baud_index[] = {
+    {0, B110},
+    {1, B300},
+    {2, B600},
+    {3, B1200},
+    {4, B2400},
+    {5, B4800},
+    {6, B9600},
+    {8, B19200},
+    {10, B38400},
+    {12, B57600},
+    {13, B115200},
+    {18, B500000}
 };
 
-/* Serial API commands */
-#define CLEAR_SCREEN 0xffcd
-#define TOUCH_GET 0xff37
-#define DRAW_POLYGON 0x0013
-#define DRAW_POLYGON_FILLED 0x0014
 
-/* Serial API responses */
-#define ACK 0x06
-#define NAK 0x15
-
-/* Serial API parameters */
-#define TOUCH_GET_STATUS 0
-#define TOUCH_GET_X 1
-#define TOUCH_GET_Y 2
-#define TOUCH_MODE_NOTOUCH 0
-#define TOUCH_MODE_PRESS 1
-#define TOUCH_MODE_RELEASE 2
-#define TOUCH_MODE_MOVING 3
-
-/* Global send and receive buffer */
-static char cmdbuf[4096];
-static char recvbuf[2];
+/**
+ * Global send and receive buffer
+ */
+char cmdbuf[4096];
+char recvbuf[2];
 
 
 /**
  * Pack an unsigned int into two bytes, little endian.
  */
-static inline int
+inline int
 pack_uint(char *dest, param_t src)
 {
     dest[0] = (src & 0xff00) >> 8;
@@ -54,19 +46,21 @@ pack_uint(char *dest, param_t src)
     return 2;
 }
 
+
 /**
  * Unpack an unsigned int from two bytes, little endian.
  */
-static inline param_t
-unpack_uint(const char *src)
+inline void
+unpack_uint(param_t *dest, const char *src)
 {
-    return ((src[0] << 8) & 0xff00) | (src[1] & 0x00ff);
+    *dest = ((src[0] << 8) & 0xff00) | (src[1] & 0x00ff);
 }
+
 
 /**
  * Pack a variable list of unsigned ints into a char pointer.
  */
-static inline int
+inline int
 pack_uints(char *buffer, int args, ...)
 {
     int i;
@@ -82,10 +76,11 @@ pack_uints(char *buffer, int args, ...)
     return args * 2;
 }
 
+
 /**
  * Debug function
  */
-static void
+void
 print_hex(const char *buffer, int size)
 {
     int i = 0;
@@ -96,31 +91,64 @@ print_hex(const char *buffer, int size)
     printf("\n");
 }
 
-int
-ulcd_open_port(void)
+
+/**
+ * Create a new struct ulcd_t object.
+ */
+struct ulcd_t *
+ulcd_new(void)
 {
-    int fd;
-
-    fd = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY);
-    if (fd == -1) {
-        perror("open_port: Unable to open /dev/ttyAMA0 - ");
-    } else {
-        fcntl(fd, F_SETFL, 0);
-    }
-
-    return fd;
+    struct ulcd_t *ulcd;
+    ulcd = malloc(sizeof(struct ulcd_t));
+    memset(ulcd, 0, sizeof(struct ulcd_t));
+    ulcd->fd = -1;
+    return ulcd;
 }
 
+
+/**
+ * Delete a ulcd_t object.
+ */
 void
-ulcd_set_port_parameters(int fd)
+ulcd_free(struct ulcd_t *ulcd)
+{
+    if (ulcd->fd != -1) {
+        close(ulcd->fd);
+    }
+    free(ulcd);
+}
+
+
+/**
+ * Open the serial port.
+ */
+int
+ulcd_open_serial_port(struct ulcd_t *ulcd)
+{
+    ulcd->fd = open(ulcd->port, O_RDWR | O_NOCTTY);
+    if (ulcd->fd == -1) {
+        perror("open_serial_port: Unable to open serial device - ");
+        return -1;
+    } else {
+        fcntl(ulcd->fd, F_SETFL, 0);
+    }
+    return 0;
+}
+
+
+/**
+ * Set serial port parameters to the ones used by uLCD-43.
+ */
+void
+ulcd_set_serial_port_parameters(struct ulcd_t *ulcd)
 {
     struct termios options;
 
-    tcgetattr(fd, &options);
+    tcgetattr(ulcd->fd, &options);
 
     /* 115200 baud */
-    cfsetispeed(&options, B115200);
-    cfsetospeed(&options, B115200);
+    cfsetispeed(&options, ulcd->baudrate);
+    cfsetospeed(&options, ulcd->baudrate);
 
     /* 8N1 */
     options.c_cflag &= ~PARENB;
@@ -143,13 +171,13 @@ ulcd_set_port_parameters(int fd)
     options.c_cc[VMIN] = 1;
     options.c_cc[VTIME] = 0;
 
-    tcsetattr(fd, TCSAFLUSH, &options);
+    tcsetattr(ulcd->fd, TCSAFLUSH, &options);
 }
 
 int
-ulcd_send(int fd, const char *data, int size)
+ulcd_send(struct ulcd_t *ulcd, const char *data, int size)
 {
-    int sent = write(fd, data, size);
+    int sent = write(ulcd->fd, data, size);
     if (sent != size) {
         fputs("ulcd_send() failed\n", stderr);
         return -1;
@@ -162,30 +190,40 @@ ulcd_send(int fd, const char *data, int size)
 }
 
 int
-ulcd_recv_ack(int fd)
+ulcd_recv_ack(struct ulcd_t *ulcd)
 {
-    unsigned char r;
+    char r;
     ssize_t bytes_read;
-    if ((bytes_read = read(fd, &r, 1)) != 1) {
+
+    bytes_read = read(ulcd->fd, &r, 1);
+
+#ifdef DEBUG_SERIAL
+    printf("read ack: ");
+    print_hex(&r, 1);
+#endif
+
+    if (bytes_read != 1) {
         printf("ulcd_recv_ack() failed: got %d bytes, expected 1\n", bytes_read);
         return -1;
     }
+
     if (r == ACK) {
         return 0;
     } else if (r == NAK) {
         printf("ulcd_recv_ack() failed: got NAK\n");
     }
+
     return r;
 }
 
 int
-ulcd_send_recv_ack(int fd, const char *data, int size)
+ulcd_send_recv_ack(struct ulcd_t *ulcd, const char *data, int size)
 {
-    if (ulcd_send(fd, data, size)) {
+    if (ulcd_send(ulcd, data, size)) {
         printf("ulcd_send() failed\n");
         return 1;
     }
-    if (ulcd_recv_ack(fd)) {
+    if (ulcd_recv_ack(ulcd)) {
         printf("ulcd_recv_ack() failed\n");
         return 2;
     }
@@ -193,135 +231,51 @@ ulcd_send_recv_ack(int fd, const char *data, int size)
 }
 
 int
-ulcd_send_recv_ack_data(int fd, const char *data, int size, void *buffer, int datasize)
+ulcd_send_recv_ack_data(struct ulcd_t *ulcd, const char *data, int size, void *buffer, int datasize)
 {
     ssize_t bytes_read;
     int r;
    
-    if (r = ulcd_send_recv_ack(fd, data, size)) {
+    if ((r = ulcd_send_recv_ack(ulcd, data, size))) {
         return r;
     }
 
-    if ((bytes_read = read(fd, buffer, datasize)) != datasize) {
-        printf("ulcd_recv_ack() failed: got %d bytes, expected %d\n", bytes_read, datasize);
-        return -1;
-    }
+    bytes_read = read(ulcd->fd, buffer, datasize);
 
 #ifdef DEBUG_SERIAL
     printf("read: ");
     print_hex(buffer, datasize);
 #endif
 
-    return 0;
-}
-
-/*********************************************************
- *                   API implementation                  *
- *********************************************************/
-
-int
-ulcd_gfx_cls(int fd)
-{
-    pack_uints(cmdbuf, 1, CLEAR_SCREEN);
-    return ulcd_send_recv_ack(fd, cmdbuf, 2);
-}
-
-int
-ulcd_touch_get(int fd, param_t type, param_t *status)
-{
-    pack_uints(cmdbuf, 2, TOUCH_GET, 0);
-    if (ulcd_send_recv_ack_data(fd, cmdbuf, 4, &recvbuf, 2)) {
+    if (bytes_read != datasize) {
+        printf("ulcd_recv_ack() failed: got %d bytes, expected %d\n", bytes_read, datasize);
         return -1;
     }
-    *status = unpack_uint(recvbuf);
-    return 0;
-}
 
-int
-ulcd_gfx_polygon(int fd, color_t color, param_t points, ...)
-{
-    char *buf;
-    va_list lst;
-    param_t i;
-    struct point_t *p;
-    int s;
-
-    s = pack_uints(cmdbuf, 2, DRAW_POLYGON_FILLED, points);
-    buf = cmdbuf + s;
-
-    va_start(lst, points);
-    for (i = 0; i < points; i++) {
-        p = va_arg(lst, struct point_t *);
-        s += pack_uint(buf, p->x);
-        s += pack_uint(buf+(points*2), p->y);
-        buf += 2;
-    }
-    va_end(lst);
-    buf += (points*2);
-    s += pack_uint(buf, color);
-
-    print_hex(cmdbuf, s);
-    return ulcd_send_recv_ack(fd, cmdbuf, s);
-}
-
-int
-benchmark(int fd, unsigned long iterations)
-{
-    unsigned long i;
-    struct point_t p1, p2, p3;
-
-    p1.x = 100; p1.y = 100;
-    p2.x = 100; p2.y = 200;
-    p3.x = 200; p3.y = 150;
-
-    clock_t diff;
-    clock_t start = clock();
-    param_t st;
-
-    for (i = 0; i < iterations; i++) {
-        /*
-        p1.x = (p1.x + 1) % 480;
-        p2.x = (p2.x + 1) % 480;
-        p3.x = (p3.x + 1) % 480;
-        if (ulcd_gfx_polygon(fd, 0xffff, 3, &p1, &p2, &p3)) {
-            return 1;
-        }
-        */
-        /*
-        if (ulcd_gfx_cls(fd)) {
-            return 1;
-        }
-        */
-        if (ulcd_touch_get(fd, TOUCH_GET_STATUS, &st)) {
-            return -1;
-        }
-        p1.x = 0;
-        p1.y = 0;
-        if (st != TOUCH_MODE_NOTOUCH) {
-            ulcd_touch_get(fd, TOUCH_GET_X, &p1.x);
-            ulcd_touch_get(fd, TOUCH_GET_Y, &p1.y);
-        }
-        printf("touch_get: %d %d %d\n", st, p1.x, p1.y);
-    }
-
-    diff = clock() - start;
-    int msec = diff * 1000 / CLOCKS_PER_SEC;
-
-    printf("%d iterations in %.3f seconds\n", iterations, msec/1000.0);
     return 0;
 }
 
 int
 main(int argc, char** argv)
 {
-    int fd = ulcd_open_port();
+    struct ulcd_t *ulcd;
 
-    ulcd_set_port_parameters(fd);
+    ulcd = ulcd_new();
+    ulcd->port = "/dev/ttyAMA0";
+    ulcd->baudrate = B115200;
 
-    if (ulcd_gfx_cls(fd)) {
+    if (ulcd_open_serial_port(ulcd)) {
+        return 2;
+    }
+    ulcd_set_serial_port_parameters(ulcd);
+
+    if (ulcd_gfx_cls(ulcd)) {
         return 1;
     }
-    benchmark(fd, atol(argv[1]));
 
-    close(fd);
+    test_touch_draw(ulcd);
+
+    ulcd_free(ulcd);
+
+    return 0;
 }

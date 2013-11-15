@@ -1,3 +1,6 @@
+#ifndef _CASO_H_
+#define _CASO_H_
+
 /*********
  * Types *
  *********/
@@ -19,20 +22,36 @@ struct point_t {
     unsigned int y;
 };
 
+struct touch_event_t {
+    param_t status;
+    struct point_t point;
+};
+
 struct baudtable_t {
     unsigned int index;
     unsigned long baudrate;
 };
 
 
+/*************
+ * Functions *
+ *************/
+
+int ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column);
+
+int ulcd_touch_get(struct ulcd_t *ulcd, param_t type, param_t *status);
+int ulcd_touch_get_event(struct ulcd_t *ulcd, struct touch_event_t *ev);
+
+int ulcd_gfx_cls(struct ulcd_t *ulcd);
+int ulcd_gfx_filled_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, param_t color);
+int ulcd_gfx_polygon(struct ulcd_t *ulcd, color_t color, param_t points, ...);
+
+
+
 /***********************
  * Serial API commands *
  ***********************/
 
-#define CLEAR_SCREEN 0xffcd
-#define TOUCH_GET 0xff37
-#define DRAW_POLYGON 0x0013
-#define DRAW_POLYGON_FILLED 0x0014
 
 /*
 #######################################
@@ -195,15 +214,4 @@ struct baudtable_t {
 #define NAK 0x15
 
 
-/*************************
- * Serial API parameters *
- *************************/
-
-#define TOUCH_GET_STATUS 0
-#define TOUCH_GET_X 1
-#define TOUCH_GET_Y 2
-
-#define TOUCH_MODE_NOTOUCH 0
-#define TOUCH_MODE_PRESS 1
-#define TOUCH_MODE_RELEASE 2
-#define TOUCH_MODE_MOVING 3
+#endif /* #ifndef _CASO_H_ */
