@@ -10,25 +10,6 @@
 #include "ulcd43.h"
 
 /**
- * Baud rates only include types found in Linux. The device also supports other baud rates.
- */
-struct baudtable_t baud_index[] = {
-    {0, B110},
-    {1, B300},
-    {2, B600},
-    {3, B1200},
-    {4, B2400},
-    {5, B4800},
-    {6, B9600},
-    {8, B19200},
-    {10, B38400},
-    {12, B57600},
-    {13, B115200},
-    {18, B500000}
-};
-
-
-/**
  * Global send and receive buffer
  */
 char cmdbuf[4096];
@@ -167,8 +148,8 @@ ulcd_set_serial_parameters(struct ulcd_t *ulcd)
     tcgetattr(ulcd->fd, &options);
 
     /* 115200 baud */
-    cfsetispeed(&options, ulcd->baudrate);
-    cfsetospeed(&options, ulcd->baudrate);
+    cfsetispeed(&options, ulcd->baud_rate);
+    cfsetospeed(&options, ulcd->baud_rate);
 
     /* 8N1 */
     options.c_cflag &= ~PARENB;

@@ -10,6 +10,7 @@
 #define ERROK 0
 #define ERRNAK 1
 #define ERRUNKNOWN 2
+#define ERRBAUDRATE 3
 
 /*********
  * Types *
@@ -24,7 +25,7 @@ typedef unsigned int param_t;
 struct ulcd_t {
     int fd;
     char device[STRBUFSIZE];
-    unsigned long baudrate;
+    unsigned long baud_rate;
     int error;
     char err[STRBUFSIZE];
 };
@@ -40,8 +41,8 @@ struct touch_event_t {
 };
 
 struct baudtable_t {
-    unsigned int index;
-    unsigned long baudrate;
+    int index;
+    long baud_rate;
 };
 
 
@@ -192,8 +193,6 @@ int ulcd_image_bitblt(struct ulcd_t *ulcd, struct point_t *point, param_t width,
 
 #define SET_BAUD_RATE 0x0026
 
-#define BAUD_INDEX_MIN 0
-#define BAUD_INDEX_MAX 19
 
 /*
 #############################

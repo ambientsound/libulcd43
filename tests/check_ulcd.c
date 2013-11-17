@@ -8,7 +8,7 @@ void
 setup(void)
 {
     ulcd = ulcd_new();
-    ulcd->baudrate = 115200;
+    ulcd->baud_rate = 115200;
     strcpy(ulcd->device, "/dev/ttyAMA0");
 
     if (ulcd_open_serial_device(ulcd)) {
@@ -36,6 +36,7 @@ START_TEST (test_error)
 }
 END_TEST
 
+
 /**
  * Gfx test case
  */
@@ -53,6 +54,18 @@ START_TEST (test_display_on_off)
 {
     ck_assert(0 == ulcd_display_off(ulcd));
     ck_assert(0 == ulcd_display_on(ulcd));
+}
+END_TEST
+
+
+/**
+ * Serial test case
+ */
+
+START_TEST (test_set_baud_rate)
+{
+    ck_assert_int_eq(0, ulcd_set_baud_rate(ulcd, ulcd->baud_rate));
+    ck_assert_int_eq(ERRBAUDRATE, ulcd_set_baud_rate(ulcd, 1337));
 }
 END_TEST
 
@@ -131,6 +144,12 @@ ulcd_suite(void)
     tcase_add_test(tc_gfx, test_gfx_contrast);
     tcase_add_test(tc_gfx, test_display_on_off);
     suite_add_tcase(s, tc_gfx);
+
+    /* Serial test case */
+    TCase *tc_serial = tcase_create("serial");
+    tcase_add_unchecked_fixture(tc_serial, setup, teardown);
+    tcase_add_test(tc_serial, test_set_baud_rate);
+    suite_add_tcase(s, tc_serial);
 
     /* Touch test case */
     TCase *tc_touch = tcase_create("touch");
