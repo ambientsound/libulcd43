@@ -120,14 +120,14 @@ ulcd_free(struct ulcd_t *ulcd)
 
 
 /**
- * Open the serial port.
+ * Open the serial device.
  */
 int
-ulcd_open_serial_port(struct ulcd_t *ulcd)
+ulcd_open_serial_device(struct ulcd_t *ulcd)
 {
-    ulcd->fd = open(ulcd->port, O_RDWR | O_NOCTTY);
+    ulcd->fd = open(ulcd->device, O_RDWR | O_NOCTTY);
     if (ulcd->fd == -1) {
-        perror("open_serial_port: Unable to open serial device - ");
+        perror("open_serial_device: Unable to open serial device - ");
         return -1;
     } else {
         fcntl(ulcd->fd, F_SETFL, 0);
@@ -137,10 +137,10 @@ ulcd_open_serial_port(struct ulcd_t *ulcd)
 
 
 /**
- * Set serial port parameters to the ones used by uLCD-43.
+ * Set serial device parameters to the ones used by uLCD-43.
  */
 void
-ulcd_set_serial_port_parameters(struct ulcd_t *ulcd)
+ulcd_set_serial_parameters(struct ulcd_t *ulcd)
 {
     struct termios options;
 
@@ -264,6 +264,9 @@ ulcd_send_recv_ack_word(struct ulcd_t *ulcd, const char *data, int size, param_t
         return -1;
     }
 
-    unpack_uint(param, buffer);
+    if (param != NULL) {
+        unpack_uint(param, buffer);
+    }
+
     return 0;
 }

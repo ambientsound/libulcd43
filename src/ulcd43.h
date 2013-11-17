@@ -13,7 +13,7 @@ typedef unsigned int param_t;
  */
 struct ulcd_t {
     int fd;
-    char *port;
+    char *device;
     unsigned long baudrate;
 };
 
@@ -37,22 +37,30 @@ struct baudtable_t {
  * Functions *
  *************/
 
+/* util.c */
 struct ulcd_t * ulcd_new(void);
 void ulcd_free(struct ulcd_t *ulcd);
-int ulcd_open_serial_port(struct ulcd_t *ulcd);
-void ulcd_set_serial_port_parameters(struct ulcd_t *ulcd);
+int ulcd_open_serial_device(struct ulcd_t *ulcd);
+void ulcd_set_serial_parameters(struct ulcd_t *ulcd);
 
+/* text.c */
 int ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column);
 
+/* touch.c */
 int ulcd_touch_set_detect_region(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2);
 int ulcd_touch_set(struct ulcd_t *ulcd, param_t type);
 int ulcd_touch_get(struct ulcd_t *ulcd, param_t type, param_t *status);
 int ulcd_touch_get_event(struct ulcd_t *ulcd, struct touch_event_t *ev);
 
+/* display.c */
 int ulcd_gfx_cls(struct ulcd_t *ulcd);
 int ulcd_gfx_filled_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, param_t color);
 int ulcd_gfx_polygon(struct ulcd_t *ulcd, color_t color, param_t points, ...);
+int ulcd_gfx_contrast(struct ulcd_t *ulcd, param_t contrast);
+int ulcd_display_on(struct ulcd_t *ulcd);
+int ulcd_display_off(struct ulcd_t *ulcd);
 
+/* image.c */
 int ulcd_image_bitblt(struct ulcd_t *ulcd, struct point_t *point, param_t width, param_t height, const char *buffer);
 
 
