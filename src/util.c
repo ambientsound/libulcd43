@@ -120,6 +120,27 @@ ulcd_free(struct ulcd_t *ulcd)
 
 
 /**
+ * Set an error message
+ */
+int
+ulcd_error(struct ulcd_t *ulcd, int error, const char *err, ...)
+{
+    va_list args;
+
+    ulcd->error = error;
+    if (err == NULL) {
+        ulcd->err[0] = '\0';
+    } else {
+        va_start(args, err);
+        vsnprintf(ulcd->err, STRBUFSIZE, err, args);
+        va_end(args);
+    }
+
+    return error;
+}
+
+
+/**
  * Open the serial device.
  */
 int
@@ -127,12 +148,11 @@ ulcd_open_serial_device(struct ulcd_t *ulcd)
 {
     ulcd->fd = open(ulcd->device, O_RDWR | O_NOCTTY);
     if (ulcd->fd == -1) {
-        perror("open_serial_device: Unable to open serial device - ");
-        return -1;
+        return ulcd_error(ulcd, errno, "Unable to open serial device: %s", strerror(errno));
     } else {
         fcntl(ulcd->fd, F_SETFL, 0);
     }
-    return 0;
+    return ERROK;
 }
 
 
@@ -177,23 +197,29 @@ ulcd_set_serial_parameters(struct ulcd_t *ulcd)
 int
 ulcd_send(struct ulcd_t *ulcd, const char *data, int size)
 {
-    int sent = write(ulcd->fd, data, size);
-    if (sent != size) {
-        fputs("ulcd_send() failed\n", stderr);
-        return -1;
+    size_t total = 0;
+    size_t sent;
+    while (total < size) {
+        sent = write(ulcd->fd, data+total, size-total);
+        if (sent < 0) {
+            return ulcd_error(ulcd, errno, "Unable to send data to device: %s", strerror(errno));
+        }
+        total += sent;
     }
+
 #ifdef DEBUG_SERIAL
     printf("send: ");
     print_hex(data, size);
 #endif
-    return 0;
+
+    return ERROK;
 }
 
 int
 ulcd_recv_ack(struct ulcd_t *ulcd)
 {
     char r;
-    ssize_t bytes_read;
+    size_t bytes_read;
 
     bytes_read = read(ulcd->fd, &r, 1);
 
@@ -202,57 +228,51 @@ ulcd_recv_ack(struct ulcd_t *ulcd)
     print_hex(&r, 1);
 #endif
 
-    if (bytes_read != 1) {
-        printf("ulcd_recv_ack() failed: got %d bytes, expected 1\n", bytes_read);
-        return -1;
-    }
-
     if (r == ACK) {
-        return 0;
+        return ERROK;
     } else if (r == NAK) {
-        printf("ulcd_recv_ack() failed: got NAK\n");
+        return ulcd_error(ulcd, ERRNAK, "Device sent NAK instead of ACK");
     }
 
-    return r;
+    return ulcd_error(ulcd, ERRUNKNOWN, "Device sent unknown reply instead of ACK");
 }
 
 int
 ulcd_send_recv_ack(struct ulcd_t *ulcd, const char *data, int size)
 {
     if (ulcd_send(ulcd, data, size)) {
-        printf("ulcd_send() failed\n");
-        return 1;
+        return ulcd->error;
     }
     if (ulcd_recv_ack(ulcd)) {
-        printf("ulcd_recv_ack() failed\n");
-        return 2;
+        return ulcd->error;
     }
-    return 0;
+    return ERROK;
 }
 
 int
 ulcd_send_recv_ack_data(struct ulcd_t *ulcd, const char *data, int size, void *buffer, int datasize)
 {
-    ssize_t bytes_read;
-    int r;
+    size_t bytes_read;
+    size_t total = 0;
    
-    if ((r = ulcd_send_recv_ack(ulcd, data, size))) {
-        return r;
+    if (ulcd_send_recv_ack(ulcd, data, size)) {
+        return ulcd->error;
     }
 
-    bytes_read = read(ulcd->fd, buffer, datasize);
+    while(total < datasize) {
+        bytes_read = read(ulcd->fd, buffer+total, datasize-total);
+        if (bytes_read < 0) {
+            return ulcd_error(ulcd, errno, "Unable to read data from device: %s", strerror(errno));
+        }
+        total += bytes_read;
+    }
 
 #ifdef DEBUG_SERIAL
     printf("read: ");
     print_hex(buffer, datasize);
 #endif
 
-    if (bytes_read != datasize) {
-        printf("ulcd_recv_ack() failed: got %d bytes, expected %d\n", bytes_read, datasize);
-        return -1;
-    }
-
-    return 0;
+    return ERROK;
 }
 
 int
@@ -268,5 +288,5 @@ ulcd_send_recv_ack_word(struct ulcd_t *ulcd, const char *data, int size, param_t
         unpack_uint(param, buffer);
     }
 
-    return 0;
+    return ERROK;
 }

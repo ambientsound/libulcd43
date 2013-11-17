@@ -1,5 +1,15 @@
-#ifndef _CASO_H_
-#define _CASO_H_
+#ifndef _ULCD43_H_
+#define _ULCD43_H_
+
+#define STRBUFSIZE 1024
+
+/**
+ * Errors
+ */
+
+#define ERROK 0
+#define ERRNAK 1
+#define ERRUNKNOWN 2
 
 /*********
  * Types *
@@ -13,8 +23,10 @@ typedef unsigned int param_t;
  */
 struct ulcd_t {
     int fd;
-    char *device;
+    char device[STRBUFSIZE];
     unsigned long baudrate;
+    int error;
+    char err[STRBUFSIZE];
 };
 
 struct point_t {
@@ -42,6 +54,7 @@ struct ulcd_t * ulcd_new(void);
 void ulcd_free(struct ulcd_t *ulcd);
 int ulcd_open_serial_device(struct ulcd_t *ulcd);
 void ulcd_set_serial_parameters(struct ulcd_t *ulcd);
+int ulcd_error(struct ulcd_t *ulcd, int error, const char *err, ...);
 
 /* text.c */
 int ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column);
@@ -238,4 +251,4 @@ int ulcd_image_bitblt(struct ulcd_t *ulcd, struct point_t *point, param_t width,
 #define NAK 0x15
 
 
-#endif /* #ifndef _CASO_H_ */
+#endif /* #ifndef _ULCD43_H_ */

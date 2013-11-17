@@ -8,8 +8,8 @@ void
 setup(void)
 {
     ulcd = ulcd_new();
-    ulcd->port = "/dev/ttyAMA0";
     ulcd->baudrate = 115200;
+    strcpy(ulcd->device, "/dev/ttyAMA0");
 
     if (ulcd_open_serial_device(ulcd)) {
         ck_abort_msg("Could not open serial port.");
@@ -23,6 +23,18 @@ teardown(void)
     ulcd_free(ulcd);
 }
 
+
+/**
+ * Util test case
+ */
+
+START_TEST (test_error)
+{
+    ulcd_error(ulcd, 123, "H%dll%d Wo%sd!", 3, 0, "rl");
+    ck_assert_int_eq(123, ulcd->error);
+    ck_assert_str_eq(ulcd->err, "H3ll0 World!");
+}
+END_TEST
 
 /**
  * Gfx test case
@@ -106,6 +118,12 @@ Suite *
 ulcd_suite(void)
 {
     Suite *s = suite_create("uLCD43");
+
+    /* Util test case */
+    TCase *tc_util = tcase_create("util");
+    tcase_add_unchecked_fixture(tc_util, setup, teardown);
+    tcase_add_test(tc_util, test_error);
+    suite_add_tcase(s, tc_util);
 
     /* Gfx test case */
     TCase *tc_gfx = tcase_create("gfx");
