@@ -8,7 +8,7 @@ void
 setup(void)
 {
     ulcd = ulcd_new();
-    ulcd->baud_rate = 115200;
+    ulcd_set_baud_rate(ulcd, 115200);
     strcpy(ulcd->device, "/dev/ttyAMA0");
 
     if (ulcd_open_serial_device(ulcd)) {

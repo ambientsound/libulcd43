@@ -11,6 +11,9 @@
 #define ERRNAK 1
 #define ERRUNKNOWN 2
 #define ERRBAUDRATE 3
+#define ERRNORESET 4
+#define ERRREAD 5
+#define ERRWRITE 6
 
 /*********
  * Types *
@@ -25,6 +28,7 @@ typedef unsigned int param_t;
 struct ulcd_t {
     int fd;
     char device[STRBUFSIZE];
+    int baud_const;
     unsigned long baud_rate;
     int error;
     char err[STRBUFSIZE];
@@ -43,6 +47,7 @@ struct touch_event_t {
 struct baudtable_t {
     int index;
     long baud_rate;
+    int baud_const;
 };
 
 
@@ -56,6 +61,7 @@ void ulcd_free(struct ulcd_t *ulcd);
 int ulcd_open_serial_device(struct ulcd_t *ulcd);
 void ulcd_set_serial_parameters(struct ulcd_t *ulcd);
 int ulcd_error(struct ulcd_t *ulcd, int error, const char *err, ...);
+int ulcd_reset(struct ulcd_t *ulcd);
 
 /* text.c */
 int ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column);
@@ -77,6 +83,8 @@ int ulcd_display_off(struct ulcd_t *ulcd);
 /* image.c */
 int ulcd_image_bitblt(struct ulcd_t *ulcd, struct point_t *point, param_t width, param_t height, const char *buffer);
 
+/* serial.c */
+int ulcd_set_baud_rate(struct ulcd_t *ulcd, long baud_rate);
 
 /***********************
  * Serial API commands *

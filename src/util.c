@@ -83,6 +83,8 @@ ulcd_new(void)
     ulcd = malloc(sizeof(struct ulcd_t));
     memset(ulcd, 0, sizeof(struct ulcd_t));
     ulcd->fd = -1;
+    ulcd->baud_rate = 9600;
+    ulcd->baud_const = B9600;
     return ulcd;
 }
 
@@ -147,9 +149,9 @@ ulcd_set_serial_parameters(struct ulcd_t *ulcd)
 
     tcgetattr(ulcd->fd, &options);
 
-    /* 115200 baud */
-    cfsetispeed(&options, ulcd->baud_rate);
-    cfsetospeed(&options, ulcd->baud_rate);
+    /* Set baud rate */
+    cfsetispeed(&options, ulcd->baud_const);
+    cfsetospeed(&options, ulcd->baud_const);
 
     /* 8N1 */
     options.c_cflag &= ~PARENB;
@@ -168,9 +170,9 @@ ulcd_set_serial_parameters(struct ulcd_t *ulcd)
     /* Raw output */
     options.c_oflag &= ~OPOST;
 
-    /* No timeout, wait for 1 byte */
-    options.c_cc[VMIN] = 1;
-    options.c_cc[VTIME] = 0;
+    /* 0.5 second timeout */
+    options.c_cc[VMIN] = 0;
+    options.c_cc[VTIME] = 5;
 
     tcsetattr(ulcd->fd, TCSAFLUSH, &options);
 }
@@ -182,8 +184,8 @@ ulcd_send(struct ulcd_t *ulcd, const char *data, int size)
     size_t sent;
     while (total < size) {
         sent = write(ulcd->fd, data+total, size-total);
-        if (sent < 0) {
-            return ulcd_error(ulcd, errno, "Unable to send data to device: %s", strerror(errno));
+        if (sent <= 0) {
+            return ulcd_error(ulcd, ERRWRITE, "Unable to send data to device: %s", strerror(errno));
         }
         total += sent;
     }
@@ -197,25 +199,45 @@ ulcd_send(struct ulcd_t *ulcd, const char *data, int size)
 }
 
 int
+ulcd_recv(struct ulcd_t *ulcd, void *buffer, int size)
+{
+    size_t bytes_read;
+    size_t total = 0;
+
+    while(total < size) {
+        bytes_read = read(ulcd->fd, buffer+total, size-total);
+        if (bytes_read <= 0) {
+            return ulcd_error(ulcd, ERRREAD, "Unable to read data from device: %s", strerror(errno));
+        }
+        total += bytes_read;
+    }
+
+#ifdef DEBUG_SERIAL
+    printf("recv: ");
+    print_hex(buffer, size);
+#endif
+
+    return ERROK;
+}
+
+
+int
 ulcd_recv_ack(struct ulcd_t *ulcd)
 {
     char r;
     size_t bytes_read;
 
-    bytes_read = read(ulcd->fd, &r, 1);
-
-#ifdef DEBUG_SERIAL
-    printf("read ack: ");
-    print_hex(&r, 1);
-#endif
+    if (ulcd_recv(ulcd, &r, 1)) {
+        return ulcd->error;
+    }
 
     if (r == ACK) {
         return ERROK;
     } else if (r == NAK) {
-        return ulcd_error(ulcd, ERRNAK, "Device sent NAK instead of ACK");
+        return ulcd_error(ulcd, ERRNAK, "Device sent NAK, expected ACK");
     }
 
-    return ulcd_error(ulcd, ERRUNKNOWN, "Device sent unknown reply instead of ACK");
+    return ulcd_error(ulcd, ERRUNKNOWN, "Device sent unknown reply `%x' instead of ACK", r);
 }
 
 int
@@ -242,7 +264,7 @@ ulcd_send_recv_ack_data(struct ulcd_t *ulcd, const char *data, int size, void *b
 
     while(total < datasize) {
         bytes_read = read(ulcd->fd, buffer+total, datasize-total);
-        if (bytes_read < 0) {
+        if (bytes_read <= 0) {
             return ulcd_error(ulcd, errno, "Unable to read data from device: %s", strerror(errno));
         }
         total += bytes_read;
@@ -270,4 +292,29 @@ ulcd_send_recv_ack_word(struct ulcd_t *ulcd, const char *data, int size, param_t
     }
 
     return ERROK;
+}
+
+
+/**
+ * Sending wrong commands to the uLCD43 may cause it to lock up. In order to
+ * un-fuck it, we send zero-bytes until we get an ACK.
+ */
+int
+ulcd_reset(struct ulcd_t *ulcd)
+{
+    char rbuf[STRBUFSIZE];
+    int read;
+    int tries;
+
+    for (tries = 0; tries < 3; tries++) {
+        if (ulcd_send(ulcd, "\0", 1)) {
+            return ulcd->error;
+        }
+        if (!ulcd_recv_ack(ulcd)) {
+            read = ulcd_recv(ulcd, rbuf, STRBUFSIZE);
+            return ulcd_error(ulcd, ERROK, "Device has been reset after %d tries. Got %d bytes in return.", tries+1, read);
+        }
+    }
+
+    return ulcd_error(ulcd, ERRNORESET, "Could not reset device even after %d tries, so gave up.", tries);
 }

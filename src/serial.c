@@ -12,19 +12,19 @@ extern char recvbuf[2];
  * Baud rates only include types found in Linux. The device also supports other baud rates.
  */
 struct baudtable_t baud_index[] = {
-    {0, 110},
-    {1, 300},
-    {2, 600},
-    {3, 1200},
-    {4, 2400},
-    {5, 4800},
-    {6, 9600},
-    {8, 19200},
-    {10, 38400},
-    {12, 57600},
-    {13, 115200},
-    {18, 500000},
-    {-1, -1}
+    {0, 110, B110},
+    {1, 300, B300},
+    {2, 600, B600},
+    {3, 1200, B1200},
+    {4, 2400, B2400},
+    {5, 4800, B4800},
+    {6, 9600, B9600},
+    {8, 19200, B19200},
+    {10, 38400, B38400},
+    {12, 57600, B57600},
+    {13, 115200, B115200},
+    {18, 500000, B500000},
+    {-1, -1, -1}
 };
 
 
@@ -57,15 +57,37 @@ struct baudtable_t baud_index[] = {
  * 19   600000      17.19%  703125
  */
 int
-ulcd_set_baud_rate(struct ulcd_t *ulcd, param_t baud_rate)
+ulcd_set_baud_rate(struct ulcd_t *ulcd, long baud_rate)
 {
     int s;
-    struct baudtable_t *t = baud_index;
+    struct termios options;
+    struct baudtable_t *t;
+
+    t = baud_index;
 
     while (t->index != -1) {
-        if (baud_rate == t->baud_rate) {
+        if (baud_rate == t->baud_rate || baud_rate == t->baud_const) {
+
+            ulcd->baud_rate = t->baud_rate;
+            ulcd->baud_const = t->baud_const;
+
+            if (ulcd->fd == -1) {
+                return ERROK;
+            }
+
             s = pack_uints(cmdbuf, 2, SET_BAUD_RATE, t->index);
-            return ulcd_send_recv_ack(ulcd, cmdbuf, s);
+            if (ulcd_send(ulcd, cmdbuf, s)) {
+                return ulcd->error;
+            }
+
+            tcgetattr(ulcd->fd, &options);
+            cfsetispeed(&options, ulcd->baud_const);
+            cfsetospeed(&options, ulcd->baud_const);
+            tcsetattr(ulcd->fd, TCSADRAIN, &options);
+
+            usleep(200000);
+
+            return ulcd_recv_ack(ulcd);
         }
         ++t;
     }
