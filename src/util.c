@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "config.h"
 #include "ulcd43.h"
 
 /**
@@ -297,22 +298,31 @@ ulcd_send_recv_ack_word(struct ulcd_t *ulcd, const char *data, int size, param_t
 
 /**
  * Sending wrong commands to the uLCD43 may cause it to lock up. In order to
- * un-fuck it, we send zero-bytes until we get an ACK.
+ * un-fuck it, we send zero-bytes until we get 0x06 0x00 0x09.
  */
 int
 ulcd_reset(struct ulcd_t *ulcd)
 {
+    const char target[3] = { 0x06, 0x00, 0x09 };
     char rbuf[STRBUFSIZE];
-    int read;
+    int pos = 0;
     int tries;
 
-    for (tries = 0; tries < 3; tries++) {
+    for (tries = 0; tries < 10; tries++) {
+
         if (ulcd_send(ulcd, "\0", 1)) {
             return ulcd->error;
         }
-        if (!ulcd_recv_ack(ulcd)) {
-            read = ulcd_recv(ulcd, rbuf, STRBUFSIZE);
-            return ulcd_error(ulcd, ERROK, "Device has been reset after %d tries. Got %d bytes in return.", tries+1, read);
+
+        while (!ulcd_recv(ulcd, rbuf, 1)) {
+            if (!memcmp(rbuf, target+pos, 1)) {
+                if (++pos == 3) {
+                    ulcd_recv(ulcd, rbuf, STRBUFSIZE);
+                    return ulcd_error(ulcd, ERROK, "Device has been reset.");
+                }
+            } else {
+                pos = 0;
+            }
         }
     }
 
