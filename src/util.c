@@ -272,7 +272,7 @@ ulcd_send_recv_ack_data(struct ulcd_t *ulcd, const char *data, int size, void *b
     }
 
 #ifdef DEBUG_SERIAL
-    printf("read: ");
+    printf("recv: ");
     print_hex(buffer, datasize);
 #endif
 
@@ -285,7 +285,7 @@ ulcd_send_recv_ack_word(struct ulcd_t *ulcd, const char *data, int size, param_t
     char buffer[2];
 
     if (ulcd_send_recv_ack_data(ulcd, data, size, buffer, 2)) {
-        return -1;
+        return ulcd->error;
     }
 
     if (param != NULL) {

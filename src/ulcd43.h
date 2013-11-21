@@ -28,6 +28,9 @@ typedef unsigned int param_t;
 struct ulcd_t {
     int fd;
     char device[STRBUFSIZE];
+    char model[STRBUFSIZE];
+    param_t spe_version;
+    param_t pmmc_version;
     int baud_const;
     unsigned long baud_rate;
     int error;
@@ -85,6 +88,12 @@ int ulcd_image_bitblt(struct ulcd_t *ulcd, struct point_t *point, param_t width,
 
 /* serial.c */
 int ulcd_set_baud_rate(struct ulcd_t *ulcd, long baud_rate);
+
+/* system.c */
+int ulcd_get_display_model(struct ulcd_t *ulcd);
+int ulcd_get_spe_version(struct ulcd_t *ulcd);
+int ulcd_get_pmmc_version(struct ulcd_t *ulcd);
+int ulcd_get_info(struct ulcd_t *ulcd);
 
 /***********************
  * Serial API commands *
@@ -247,6 +256,8 @@ int ulcd_set_baud_rate(struct ulcd_t *ulcd, long baud_rate);
 */
 
 #define GET_DISPLAY_MODEL 0x001a
+#define GET_SPE_VERSION 0x001b
+#define GET_PMMC_VERSION 0x001c
 
 
 
