@@ -235,6 +235,17 @@ START_TEST (test_touch_get_event)
 }
 END_TEST
 
+
+/**
+ * Text test case
+ */
+
+START_TEST (test_txt_putstr)
+{
+    ck_assert(0 == ulcd_txt_putstr(ulcd, "All your base are belong to us"));
+}
+END_TEST
+
 /**
  * Image Control test case
  */
@@ -292,6 +303,12 @@ ulcd_suite(void)
     tcase_add_test(tc_touch, test_touch_get);
     tcase_add_test(tc_touch, test_touch_get_event);
     suite_add_tcase(s, tc_touch);
+
+    /* Text test case */
+    TCase *tc_text = tcase_create("text");
+    tcase_add_unchecked_fixture(tc_text, setup, teardown);
+    tcase_add_test(tc_text, test_txt_putstr);
+    suite_add_tcase(s, tc_text);
 
     /* Image test case */
     /*
