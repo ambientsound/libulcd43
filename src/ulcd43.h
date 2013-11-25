@@ -92,6 +92,7 @@ int ulcd_txt_set_italic(struct ulcd_t *ulcd, param_t value, param_t *prev);
 int ulcd_txt_set_underline(struct ulcd_t *ulcd, param_t value, param_t *prev);
 int ulcd_txt_set_opacity(struct ulcd_t *ulcd, param_t value, param_t *prev);
 int ulcd_txt_set_attributes(struct ulcd_t *ulcd, param_t value, param_t *prev);
+int ulcd_txt_reset(struct ulcd_t *ulcd);
 
 /* touch.c */
 int ulcd_touch_set_detect_region(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2);

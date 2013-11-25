@@ -142,3 +142,38 @@ ulcd_txt_set_attributes(struct ulcd_t *ulcd, param_t value, param_t *prev)
     int s = pack_uints(cmdbuf, 2, TXT_ATTRIBUTES, value);
     return ulcd_send_recv_ack_word(ulcd, cmdbuf, s, prev);
 }
+
+/**
+ * Resets text parameters to sane values.
+ *
+ * Not part of the official API.
+ */
+int
+ulcd_txt_reset(struct ulcd_t *ulcd)
+{
+    if (ulcd_txt_set_attributes(ulcd, 0, NULL)) {
+        return ulcd->error;
+    }
+    if (ulcd_txt_set_xgap(ulcd, 0, NULL)) {
+        return ulcd->error;
+    }
+    if (ulcd_txt_set_ygap(ulcd, 0, NULL)) {
+        return ulcd->error;
+    }
+    if (ulcd_txt_set_width(ulcd, 1, NULL)) {
+        return ulcd->error;
+    }
+    if (ulcd_txt_set_height(ulcd, 1, NULL)) {
+        return ulcd->error;
+    }
+    if (ulcd_txt_set_font(ulcd, 0, NULL)) {
+        return ulcd->error;
+    }
+    if (ulcd_txt_set_color_bg(ulcd, 0x0000, NULL)) {
+        return ulcd->error;
+    }
+    if (ulcd_txt_set_color_fg(ulcd, 0xffff, NULL)) {
+        return ulcd->error;
+    }
+    return ulcd->error;
+}
