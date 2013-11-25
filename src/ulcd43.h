@@ -42,6 +42,11 @@ struct point_t {
     unsigned int y;
 };
 
+struct polygon_t {
+    unsigned int num;
+    struct point_t **points;
+};
+
 struct touch_event_t {
     param_t status;
     struct point_t point;
@@ -63,6 +68,8 @@ struct ulcd_t * ulcd_new(void);
 void ulcd_free(struct ulcd_t *ulcd);
 int ulcd_open_serial_device(struct ulcd_t *ulcd);
 void ulcd_set_serial_parameters(struct ulcd_t *ulcd);
+struct polygon_t * ulcd_make_polygon(int args, ...);
+void ulcd_free_polygon(struct polygon_t *poly);
 int ulcd_error(struct ulcd_t *ulcd, int error, const char *err, ...);
 int ulcd_reset(struct ulcd_t *ulcd);
 
@@ -77,8 +84,11 @@ int ulcd_touch_get_event(struct ulcd_t *ulcd, struct touch_event_t *ev);
 
 /* display.c */
 int ulcd_gfx_cls(struct ulcd_t *ulcd);
-int ulcd_gfx_filled_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, param_t color);
-int ulcd_gfx_polygon(struct ulcd_t *ulcd, color_t color, param_t points, ...);
+int ulcd_gfx_rectangle(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2, color_t color);
+int ulcd_gfx_filled_rectangle(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2, color_t color);
+int ulcd_gfx_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, color_t color);
+int ulcd_gfx_filled_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, color_t color);
+int ulcd_gfx_polygon(struct ulcd_t *ulcd, struct polygon_t *poly, color_t color);
 int ulcd_gfx_contrast(struct ulcd_t *ulcd, param_t contrast);
 int ulcd_display_on(struct ulcd_t *ulcd);
 int ulcd_display_off(struct ulcd_t *ulcd);

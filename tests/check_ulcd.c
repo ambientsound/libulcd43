@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <check.h>
+#include "../src/util.h"
 #include "../src/ulcd43.h"
 
 struct ulcd_t *ulcd;
@@ -36,10 +37,133 @@ START_TEST (test_error)
 }
 END_TEST
 
+START_TEST (test_make_polygon)
+{
+    struct polygon_t *poly;
+    struct point_t p1, p2, p3;
+    struct point_t *t1, *t2, *t3;
+
+    p1.x = 100; p1.y = 100;
+    p2.x = 200; p2.y = 250;
+    p3.x = 150; p3.y = 50;
+
+    poly = ulcd_make_polygon(3, &p1, &p2, &p3);
+
+    t1 = poly->points[0];
+    t2 = poly->points[1];
+    t3 = poly->points[2];
+
+    ck_assert_int_eq(3, poly->num);
+    ck_assert_int_eq(t1->x, p1.x);
+    ck_assert_int_eq(t1->y, p1.y);
+    ck_assert_int_eq(t2->x, p2.x);
+    ck_assert_int_eq(t2->y, p2.y);
+    ck_assert_int_eq(t3->x, p3.x);
+    ck_assert_int_eq(t3->y, p3.y);
+
+    ulcd_free_polygon(poly);
+}
+END_TEST
+
+START_TEST (test_pack_polygon)
+{
+    /*               num         p1.x        p2.x        p3.x        p1.y        p2.y        p3.y           */
+    char chk[14] = { 0x00, 0x03, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03 };
+    char buffer[14];
+    struct polygon_t *poly;
+    struct point_t p1, p2, p3;
+
+    p1.x = 1; p1.y = 1;
+    p2.x = 2; p2.y = 2;
+    p3.x = 3; p3.y = 3;
+
+    poly = ulcd_make_polygon(3, &p1, &p2, &p3);
+
+    ck_assert_int_eq(14, pack_polygon(buffer, poly));
+    ck_assert_int_eq(0, memcmp(buffer, chk, 14));
+
+    ulcd_free_polygon(poly);
+}
+END_TEST
+
 
 /**
  * Gfx test case
  */
+
+START_TEST (test_gfx_cls)
+{
+    ck_assert(0 == ulcd_gfx_cls(ulcd));
+}
+END_TEST
+
+START_TEST (test_gfx_circle)
+{
+    struct point_t p1;
+    p1.x = 100; p1.y = 100;
+    ck_assert(0 == ulcd_gfx_circle(ulcd, &p1, 50, 0xffff));
+}
+END_TEST
+
+START_TEST (test_gfx_filled_circle)
+{
+    struct point_t p1;
+    p1.x = 100; p1.y = 100;
+    ck_assert(0 == ulcd_gfx_filled_circle(ulcd, &p1, 50, 0xffff));
+}
+END_TEST
+
+START_TEST (test_gfx_rectangle)
+{
+    struct point_t p1, p2;
+    p1.x = 100; p1.y = 100;
+    p2.x = 200; p2.y = 250;
+    ck_assert(0 == ulcd_gfx_rectangle(ulcd, &p1, &p2, 0xffff));
+}
+END_TEST
+
+START_TEST (test_gfx_filled_rectangle)
+{
+    struct point_t p1, p2;
+    p1.x = 100; p1.y = 100;
+    p2.x = 200; p2.y = 250;
+    ck_assert(0 == ulcd_gfx_filled_rectangle(ulcd, &p1, &p2, 0xffff));
+}
+END_TEST
+
+START_TEST (test_gfx_polygon)
+{
+    struct polygon_t *poly;
+    struct point_t p1, p2, p3;
+
+    p1.x = 100; p1.y = 100;
+    p2.x = 200; p2.y = 250;
+    p3.x = 150; p3.y = 50;
+
+    poly = ulcd_make_polygon(3, &p1, &p2, &p3);
+
+    ck_assert(0 == ulcd_gfx_polygon(ulcd, poly, 0xffff));
+
+    ulcd_free_polygon(poly);
+}
+END_TEST
+
+START_TEST (test_gfx_filled_polygon)
+{
+    struct polygon_t *poly;
+    struct point_t p1, p2, p3;
+
+    p1.x = 100; p1.y = 100;
+    p2.x = 200; p2.y = 250;
+    p3.x = 150; p3.y = 50;
+
+    poly = ulcd_make_polygon(3, &p1, &p2, &p3);
+
+    ck_assert(0 == ulcd_gfx_filled_polygon(ulcd, poly, 0xffff));
+
+    ulcd_free_polygon(poly);
+}
+END_TEST
 
 START_TEST (test_gfx_contrast)
 {
@@ -136,11 +260,20 @@ ulcd_suite(void)
     TCase *tc_util = tcase_create("util");
     tcase_add_unchecked_fixture(tc_util, setup, teardown);
     tcase_add_test(tc_util, test_error);
+    tcase_add_test(tc_util, test_make_polygon);
+    tcase_add_test(tc_util, test_pack_polygon);
     suite_add_tcase(s, tc_util);
 
     /* Gfx test case */
     TCase *tc_gfx = tcase_create("gfx");
     tcase_add_unchecked_fixture(tc_gfx, setup, teardown);
+    tcase_add_test(tc_gfx, test_gfx_cls);
+    tcase_add_test(tc_gfx, test_gfx_circle);
+    tcase_add_test(tc_gfx, test_gfx_filled_circle);
+    tcase_add_test(tc_gfx, test_gfx_rectangle);
+    tcase_add_test(tc_gfx, test_gfx_filled_rectangle);
+    tcase_add_test(tc_gfx, test_gfx_polygon);
+    tcase_add_test(tc_gfx, test_gfx_filled_polygon);
     tcase_add_test(tc_gfx, test_gfx_contrast);
     tcase_add_test(tc_gfx, test_display_on_off);
     suite_add_tcase(s, tc_gfx);

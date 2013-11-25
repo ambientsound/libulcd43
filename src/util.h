@@ -7,6 +7,7 @@
 inline int pack_uint(char *dest, param_t src);
 inline void unpack_uint(param_t *dest, const char *src);
 inline int pack_uints(char *buffer, int args, ...);
+inline int pack_polygon(char *dest, struct polygon_t *poly);
 void print_hex(const char *buffer, int size);
 
 /* Send and receive */

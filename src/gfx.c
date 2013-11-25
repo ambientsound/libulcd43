@@ -32,36 +32,54 @@ ulcd_gfx_cls(struct ulcd_t *ulcd)
 }
 
 int
-ulcd_gfx_filled_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, param_t color)
+ulcd_gfx_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, color_t color)
+{
+    int s = pack_uints(cmdbuf, 5, CIRCLE, point->x, point->y, radius, color);
+    return ulcd_send_recv_ack(ulcd, cmdbuf, s);
+}
+
+int
+ulcd_gfx_filled_circle(struct ulcd_t *ulcd, struct point_t *point, param_t radius, color_t color)
 {
     int s = pack_uints(cmdbuf, 5, CIRCLE_FILLED, point->x, point->y, radius, color);
     return ulcd_send_recv_ack(ulcd, cmdbuf, s);
 }
 
 int
-ulcd_gfx_polygon(struct ulcd_t *ulcd, color_t color, param_t points, ...)
+ulcd_gfx_rectangle(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2, color_t color)
 {
-    char *buf;
-    va_list lst;
-    param_t i;
-    struct point_t *p;
+    int s = pack_uints(cmdbuf, 6, RECTANGLE, p1->x, p1->y, p2->x, p2->y, color);
+    return ulcd_send_recv_ack(ulcd, cmdbuf, s);
+}
+
+int
+ulcd_gfx_filled_rectangle(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2, color_t color)
+{
+    int s = pack_uints(cmdbuf, 6, RECTANGLE_FILLED, p1->x, p1->y, p2->x, p2->y, color);
+    return ulcd_send_recv_ack(ulcd, cmdbuf, s);
+}
+
+int
+ulcd_gfx_polygon(struct ulcd_t *ulcd, struct polygon_t *poly, color_t color)
+{
     int s;
 
-    s = pack_uints(cmdbuf, 2, POLYGON_FILLED, points);
-    buf = cmdbuf + s;
+    s = pack_uint(cmdbuf, POLYGON);
+    s += pack_polygon(cmdbuf+s, poly);
+    s += pack_uint(cmdbuf+s, color);
 
-    va_start(lst, points);
-    for (i = 0; i < points; i++) {
-        p = va_arg(lst, struct point_t *);
-        s += pack_uint(buf, p->x);
-        s += pack_uint(buf+(points*2), p->y);
-        buf += 2;
-    }
-    va_end(lst);
-    buf += (points*2);
-    s += pack_uint(buf, color);
+    return ulcd_send_recv_ack(ulcd, cmdbuf, s);
+}
 
-    print_hex(cmdbuf, s);
+int
+ulcd_gfx_filled_polygon(struct ulcd_t *ulcd, struct polygon_t *poly, color_t color)
+{
+    int s;
+
+    s = pack_uint(cmdbuf, POLYGON_FILLED);
+    s += pack_polygon(cmdbuf+s, poly);
+    s += pack_uint(cmdbuf+s, color);
+
     return ulcd_send_recv_ack(ulcd, cmdbuf, s);
 }
 

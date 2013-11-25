@@ -6,6 +6,7 @@
 #include <termios.h> /* POSIX terminal control definitions */
 #include <stdlib.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include "config.h"
 #include "ulcd43.h"
@@ -58,6 +59,75 @@ pack_uints(char *buffer, int args, ...)
     return args * 2;
 }
 
+
+/**
+ * Pack a polygon_t into N bytes.
+ */
+inline int
+pack_polygon(char *dest, struct polygon_t *poly)
+{
+    int written = 0;
+    unsigned int i;
+    struct point_t *p;
+
+    assert(poly->num >= 3);
+
+    written += pack_uint(dest, poly->num);
+    dest += written;
+
+    for (i = 0; i < poly->num; i++) {
+        p = poly->points[i];
+        written += pack_uint(dest, p->x);
+        written += pack_uint(dest+(poly->num*2), p->y);
+        dest += 2;
+    }
+
+    return written;
+}
+
+
+/**
+ * Create a polygon from points
+ */
+struct polygon_t *
+ulcd_make_polygon(int args, ...)
+{
+    int i;
+    va_list lst;
+    struct polygon_t *poly;
+    struct point_t *dst, *src;
+
+    poly = malloc(sizeof(struct polygon_t));
+    poly->points = malloc(sizeof(struct point_t **));
+    poly->num = args;
+
+    dst = poly->points[0];
+    va_start(lst, args);
+    for (i = 0; i < args; i++) {
+        dst = malloc(sizeof(struct point_t));
+        src = va_arg(lst, struct point_t *);
+        memcpy(dst, src, sizeof(struct point_t));
+        poly->points[i] = dst;
+    }
+    va_end(lst);
+
+    return poly;
+}
+
+
+/**
+ * Delete a polygon object
+ */
+void
+ulcd_free_polygon(struct polygon_t *poly)
+{
+    while (poly->num > 0) {
+        free(poly->points[poly->num-1]);
+        --(poly->num);
+    }
+    free(poly->points);
+    free(poly);
+}
 
 /**
  * Debug function
