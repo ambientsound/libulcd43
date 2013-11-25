@@ -93,7 +93,7 @@ END_TEST
 
 START_TEST (test_gfx_cls)
 {
-    ck_assert(0 == ulcd_gfx_cls(ulcd));
+    ck_assert_int_eq(0, ulcd_gfx_cls(ulcd));
 }
 END_TEST
 
@@ -101,7 +101,7 @@ START_TEST (test_gfx_circle)
 {
     struct point_t p1;
     p1.x = 100; p1.y = 100;
-    ck_assert(0 == ulcd_gfx_circle(ulcd, &p1, 50, 0xffff));
+    ck_assert_int_eq(0, ulcd_gfx_circle(ulcd, &p1, 50, 0xffff));
 }
 END_TEST
 
@@ -109,7 +109,7 @@ START_TEST (test_gfx_filled_circle)
 {
     struct point_t p1;
     p1.x = 100; p1.y = 100;
-    ck_assert(0 == ulcd_gfx_filled_circle(ulcd, &p1, 50, 0xffff));
+    ck_assert_int_eq(0, ulcd_gfx_filled_circle(ulcd, &p1, 50, 0xffff));
 }
 END_TEST
 
@@ -118,7 +118,7 @@ START_TEST (test_gfx_rectangle)
     struct point_t p1, p2;
     p1.x = 100; p1.y = 100;
     p2.x = 200; p2.y = 250;
-    ck_assert(0 == ulcd_gfx_rectangle(ulcd, &p1, &p2, 0xffff));
+    ck_assert_int_eq(0, ulcd_gfx_rectangle(ulcd, &p1, &p2, 0xffff));
 }
 END_TEST
 
@@ -127,7 +127,7 @@ START_TEST (test_gfx_filled_rectangle)
     struct point_t p1, p2;
     p1.x = 100; p1.y = 100;
     p2.x = 200; p2.y = 250;
-    ck_assert(0 == ulcd_gfx_filled_rectangle(ulcd, &p1, &p2, 0xffff));
+    ck_assert_int_eq(0, ulcd_gfx_filled_rectangle(ulcd, &p1, &p2, 0xffff));
 }
 END_TEST
 
@@ -142,7 +142,7 @@ START_TEST (test_gfx_polygon)
 
     poly = ulcd_make_polygon(3, &p1, &p2, &p3);
 
-    ck_assert(0 == ulcd_gfx_polygon(ulcd, poly, 0xffff));
+    ck_assert_int_eq(0, ulcd_gfx_polygon(ulcd, poly, 0xffff));
 
     ulcd_free_polygon(poly);
 }
@@ -159,7 +159,7 @@ START_TEST (test_gfx_filled_polygon)
 
     poly = ulcd_make_polygon(3, &p1, &p2, &p3);
 
-    ck_assert(0 == ulcd_gfx_filled_polygon(ulcd, poly, 0xffff));
+    ck_assert_int_eq(0, ulcd_gfx_filled_polygon(ulcd, poly, 0xffff));
 
     ulcd_free_polygon(poly);
 }
@@ -169,15 +169,15 @@ START_TEST (test_gfx_contrast)
 {
     param_t i;
     for (i = 0; i < 16; i++) {
-        ck_assert(0 == ulcd_gfx_contrast(ulcd, i));
+        ck_assert_int_eq(0, ulcd_gfx_contrast(ulcd, i));
     }
 }
 END_TEST
 
 START_TEST (test_display_on_off)
 {
-    ck_assert(0 == ulcd_display_off(ulcd));
-    ck_assert(0 == ulcd_display_on(ulcd));
+    ck_assert_int_eq(0, ulcd_display_off(ulcd));
+    ck_assert_int_eq(0, ulcd_display_on(ulcd));
 }
 END_TEST
 
@@ -202,16 +202,16 @@ START_TEST (test_touch_set_detect_region)
 {
     struct point_t p1 = { 0, 0 };
     struct point_t p2 = { 479, 271 };
-    ck_assert(0 == ulcd_touch_set_detect_region(ulcd, &p1, &p2));
+    ck_assert_int_eq(0, ulcd_touch_set_detect_region(ulcd, &p1, &p2));
 }
 END_TEST
 
 START_TEST (test_touch_set)
 {
     param_t status;
-    ck_assert(0 == ulcd_touch_init(ulcd));
-    ck_assert(0 == ulcd_touch_reset(ulcd));
-    ck_assert(0 == ulcd_touch_disable(ulcd));
+    ck_assert_int_eq(0, ulcd_touch_init(ulcd));
+    ck_assert_int_eq(0, ulcd_touch_reset(ulcd));
+    ck_assert_int_eq(0, ulcd_touch_disable(ulcd));
 }
 END_TEST
 
@@ -219,7 +219,7 @@ START_TEST (test_touch_get)
 {
     param_t status;
     ulcd_touch_get(ulcd, TOUCH_GET_MODE_STATUS, &status);
-    ck_assert(status == TOUCH_STATUS_NOTOUCH);
+    ck_assert_int_eq(status, TOUCH_STATUS_NOTOUCH);
 }
 END_TEST
 
@@ -229,9 +229,9 @@ START_TEST (test_touch_get_event)
     ev.point.x = 0;
     ev.point.y = 0;
     ulcd_touch_get_event(ulcd, &ev);
-    ck_assert(ev.status == TOUCH_STATUS_NOTOUCH);
-    ck_assert(ev.point.x == 0);
-    ck_assert(ev.point.y == 0);
+    ck_assert_int_eq(ev.status, TOUCH_STATUS_NOTOUCH);
+    ck_assert_int_eq(ev.point.x, 0);
+    ck_assert_int_eq(ev.point.y, 0);
 }
 END_TEST
 
@@ -240,9 +240,34 @@ END_TEST
  * Text test case
  */
 
+START_TEST (test_move_cursor)
+{
+    ck_assert_int_eq(0, ulcd_move_cursor(ulcd, 0, 0));
+}
+END_TEST
+
 START_TEST (test_txt_putstr)
 {
-    ck_assert(0 == ulcd_txt_putstr(ulcd, "All your base are belong to us"));
+    const char *str = "All your base are belong to us";
+    param_t slen;
+    ck_assert_int_eq(0, ulcd_txt_putstr(ulcd, str, &slen));
+    ck_assert_int_eq(slen, strlen(str));
+}
+END_TEST
+
+START_TEST (test_txt_charwidth)
+{
+    param_t p;
+    ck_assert_int_eq(0, ulcd_txt_charwidth(ulcd, 'a', &p));
+    ck_assert_int_eq(7, p);
+}
+END_TEST
+
+START_TEST (test_txt_charheight)
+{
+    param_t p;
+    ck_assert_int_eq(0, ulcd_txt_charheight(ulcd, 'e', &p));
+    ck_assert_int_eq(8, p);
 }
 END_TEST
 
@@ -307,7 +332,10 @@ ulcd_suite(void)
     /* Text test case */
     TCase *tc_text = tcase_create("text");
     tcase_add_unchecked_fixture(tc_text, setup, teardown);
+    tcase_add_test(tc_text, test_move_cursor);
     tcase_add_test(tc_text, test_txt_putstr);
+    tcase_add_test(tc_text, test_txt_charwidth);
+    tcase_add_test(tc_text, test_txt_charheight);
     suite_add_tcase(s, tc_text);
 
     /* Image test case */

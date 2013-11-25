@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <string.h>
 #include "ulcd43.h"
 #include "util.h"
 
@@ -14,7 +15,7 @@ ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column)
 }
 
 int
-ulcd_txt_putstr(struct ulcd_t *ulcd, const char *str)
+ulcd_txt_putstr(struct ulcd_t *ulcd, const char *str, param_t *slen)
 {
     int len = strlen(str);
     int s = pack_uint(cmdbuf, PUT_STR);
@@ -25,19 +26,21 @@ ulcd_txt_putstr(struct ulcd_t *ulcd, const char *str)
     strncpy(cmdbuf+s, str, len);
     cmdbuf[s+len] = '\0';
 
-    print_hex(cmdbuf, s+len+1);
-    return ulcd_send_recv_ack(ulcd, cmdbuf, s+len+1);
+    return ulcd_send_recv_ack_word(ulcd, cmdbuf, s+len+1, slen);
 }
 
-/*
-    def putStr(self, string):
-        if len(string) > 511:
-            string = string[:511]
-        string += '\0'
-        self.send_ack(self.PUT_STR + string)
-        return self.recv_word()
+int
+ulcd_txt_charwidth(struct ulcd_t *ulcd, char c, param_t *width)
+{
+    int s = pack_uint(cmdbuf, CHAR_WIDTH);
+    cmdbuf[s] = c;
+    return ulcd_send_recv_ack_word(ulcd, cmdbuf, s+1, width);
+}
 
-    def txt_MoveCursor(self, line, column):
-        return self.send_args_ack(self.MOVE_CURSOR, line, column)
-
-*/
+int
+ulcd_txt_charheight(struct ulcd_t *ulcd, char c, param_t *height)
+{
+    int s = pack_uint(cmdbuf, CHAR_HEIGHT);
+    cmdbuf[s] = c;
+    return ulcd_send_recv_ack_word(ulcd, cmdbuf, s+1, height);
+}
