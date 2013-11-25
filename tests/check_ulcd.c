@@ -246,10 +246,18 @@ START_TEST (test_move_cursor)
 }
 END_TEST
 
+START_TEST (test_txt_putch)
+{
+    ck_assert_int_eq(0, ulcd_txt_putch(ulcd, '!'));
+}
+END_TEST
+
 START_TEST (test_txt_putstr)
 {
     const char *str = "All your base are belong to us";
     param_t slen;
+    ck_assert_int_eq(0, ulcd_txt_set_font(ulcd, 0, NULL));
+    ck_assert_int_eq(0, ulcd_txt_set_attributes(ulcd, 0, NULL));
     ck_assert_int_eq(0, ulcd_txt_putstr(ulcd, str, &slen));
     ck_assert_int_eq(slen, strlen(str));
 }
@@ -258,6 +266,8 @@ END_TEST
 START_TEST (test_txt_charwidth)
 {
     param_t p;
+    ck_assert_int_eq(0, ulcd_txt_set_font(ulcd, 0, NULL));
+    ck_assert_int_eq(0, ulcd_txt_set_attributes(ulcd, 0, NULL));
     ck_assert_int_eq(0, ulcd_txt_charwidth(ulcd, 'a', &p));
     ck_assert_int_eq(7, p);
 }
@@ -266,8 +276,142 @@ END_TEST
 START_TEST (test_txt_charheight)
 {
     param_t p;
+    ck_assert_int_eq(0, ulcd_txt_set_font(ulcd, 0, NULL));
+    ck_assert_int_eq(0, ulcd_txt_set_attributes(ulcd, 0, NULL));
     ck_assert_int_eq(0, ulcd_txt_charheight(ulcd, 'e', &p));
     ck_assert_int_eq(8, p);
+}
+END_TEST
+
+START_TEST (test_txt_set_color_fg)
+{
+    color_t c1 = 0x00ff;
+    color_t c2 = 0xffff;
+    color_t chk;
+    ck_assert_int_eq(0, ulcd_txt_set_color_fg(ulcd, c1, &chk));
+    ck_assert_int_eq(0, ulcd_txt_set_color_fg(ulcd, c2, &chk));
+    ck_assert_int_eq(chk, c2);
+}
+END_TEST
+
+START_TEST (test_txt_set_color_bg)
+{
+    color_t c1 = 0x00ff;
+    color_t c2 = 0x0000;
+    color_t chk;
+    ck_assert_int_eq(0, ulcd_txt_set_color_bg(ulcd, c1, &chk));
+    ck_assert_int_eq(0, ulcd_txt_set_color_bg(ulcd, c2, &chk));
+    ck_assert_int_eq(chk, c2);
+}
+END_TEST
+
+START_TEST (test_txt_set_font)
+{
+    param_t font = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_font(ulcd, font, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_font(ulcd, font, &prev));
+    ck_assert_int_eq(font, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_width)
+{
+    param_t width = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_width(ulcd, width, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_width(ulcd, width, &prev));
+    ck_assert_int_eq(width, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_height)
+{
+    param_t height = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_height(ulcd, height, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_height(ulcd, height, &prev));
+    ck_assert_int_eq(height, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_xgap)
+{
+    param_t xgap = 0;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_xgap(ulcd, xgap, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_xgap(ulcd, xgap, &prev));
+    ck_assert_int_eq(xgap, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_ygap)
+{
+    param_t ygap = 0;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_ygap(ulcd, ygap, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_ygap(ulcd, ygap, &prev));
+    ck_assert_int_eq(ygap, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_bold)
+{
+    param_t bold = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_bold(ulcd, bold, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_bold(ulcd, bold, &prev));
+    ck_assert_int_eq(bold, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_inverse)
+{
+    param_t inverse = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_inverse(ulcd, inverse, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_inverse(ulcd, inverse, &prev));
+    ck_assert_int_eq(inverse, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_italic)
+{
+    param_t italic = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_italic(ulcd, italic, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_italic(ulcd, italic, &prev));
+    ck_assert_int_eq(italic, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_opacity)
+{
+    param_t opacity = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_opacity(ulcd, opacity, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_opacity(ulcd, opacity, &prev));
+    ck_assert_int_eq(opacity, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_underline)
+{
+    param_t underline = 1;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_underline(ulcd, underline, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_underline(ulcd, underline, &prev));
+    ck_assert_int_eq(underline, prev);
+}
+END_TEST
+
+START_TEST (test_txt_set_attributes)
+{
+    param_t attributes = TXT_ATTRIBUTE_ITALIC | TXT_ATTRIBUTE_BOLD;
+    param_t prev;
+    ck_assert_int_eq(0, ulcd_txt_set_attributes(ulcd, attributes, &prev));
+    ck_assert_int_eq(0, ulcd_txt_set_attributes(ulcd, attributes, &prev));
+    ck_assert_int_eq(attributes, prev);
 }
 END_TEST
 
@@ -333,9 +477,23 @@ ulcd_suite(void)
     TCase *tc_text = tcase_create("text");
     tcase_add_unchecked_fixture(tc_text, setup, teardown);
     tcase_add_test(tc_text, test_move_cursor);
+    tcase_add_test(tc_text, test_txt_putch);
     tcase_add_test(tc_text, test_txt_putstr);
     tcase_add_test(tc_text, test_txt_charwidth);
     tcase_add_test(tc_text, test_txt_charheight);
+    tcase_add_test(tc_text, test_txt_set_color_fg);
+    tcase_add_test(tc_text, test_txt_set_color_bg);
+    tcase_add_test(tc_text, test_txt_set_font);
+    tcase_add_test(tc_text, test_txt_set_width);
+    tcase_add_test(tc_text, test_txt_set_height);
+    tcase_add_test(tc_text, test_txt_set_xgap);
+    tcase_add_test(tc_text, test_txt_set_ygap);
+    tcase_add_test(tc_text, test_txt_set_bold);
+    tcase_add_test(tc_text, test_txt_set_inverse);
+    tcase_add_test(tc_text, test_txt_set_italic);
+    tcase_add_test(tc_text, test_txt_set_underline);
+    tcase_add_test(tc_text, test_txt_set_opacity);
+    tcase_add_test(tc_text, test_txt_set_attributes);
     suite_add_tcase(s, tc_text);
 
     /* Image test case */

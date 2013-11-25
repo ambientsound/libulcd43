@@ -75,9 +75,23 @@ int ulcd_reset(struct ulcd_t *ulcd);
 
 /* text.c */
 int ulcd_move_cursor(struct ulcd_t *ulcd, param_t line, param_t column);
+int ulcd_txt_putch(struct ulcd_t *ulcd, char c);
 int ulcd_txt_putstr(struct ulcd_t *ulcd, const char *str, param_t *slen);
 int ulcd_txt_charwidth(struct ulcd_t *ulcd, char c, param_t *width);
 int ulcd_txt_charheight(struct ulcd_t *ulcd, char c, param_t *height);
+int ulcd_txt_set_color_fg(struct ulcd_t *ulcd, color_t color, color_t *prev);
+int ulcd_txt_set_color_bg(struct ulcd_t *ulcd, color_t color, color_t *prev);
+int ulcd_txt_set_font(struct ulcd_t *ulcd, param_t font, param_t *prev);
+int ulcd_txt_set_width(struct ulcd_t *ulcd, param_t multiplier, param_t *prev);
+int ulcd_txt_set_height(struct ulcd_t *ulcd, param_t multiplier, param_t *prev);
+int ulcd_txt_set_xgap(struct ulcd_t *ulcd, param_t pixels, param_t *prev);
+int ulcd_txt_set_ygap(struct ulcd_t *ulcd, param_t pixels, param_t *prev);
+int ulcd_txt_set_bold(struct ulcd_t *ulcd, param_t value, param_t *prev);
+int ulcd_txt_set_inverse(struct ulcd_t *ulcd, param_t value, param_t *prev);
+int ulcd_txt_set_italic(struct ulcd_t *ulcd, param_t value, param_t *prev);
+int ulcd_txt_set_underline(struct ulcd_t *ulcd, param_t value, param_t *prev);
+int ulcd_txt_set_opacity(struct ulcd_t *ulcd, param_t value, param_t *prev);
+int ulcd_txt_set_attributes(struct ulcd_t *ulcd, param_t value, param_t *prev);
 
 /* touch.c */
 int ulcd_touch_set_detect_region(struct ulcd_t *ulcd, struct point_t *p1, struct point_t *p2);
