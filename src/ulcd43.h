@@ -14,6 +14,7 @@
 #define ERRNORESET 4
 #define ERRREAD 5
 #define ERRWRITE 6
+#define ERRTIMEOUT 7
 
 /*********
  * Types *
@@ -33,6 +34,7 @@ struct ulcd_t {
     param_t pmmc_version;
     int baud_const;
     unsigned long baud_rate;
+    unsigned long timeout;
     int error;
     char err[STRBUFSIZE];
 };

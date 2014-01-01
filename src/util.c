@@ -156,6 +156,7 @@ ulcd_new(void)
     ulcd->fd = -1;
     ulcd->baud_rate = 9600;
     ulcd->baud_const = B9600;
+    ulcd->timeout = 500000;
     return ulcd;
 }
 
@@ -200,11 +201,9 @@ ulcd_error(struct ulcd_t *ulcd, int error, const char *err, ...)
 int
 ulcd_open_serial_device(struct ulcd_t *ulcd)
 {
-    ulcd->fd = open(ulcd->device, O_RDWR | O_NOCTTY);
+    ulcd->fd = open(ulcd->device, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (ulcd->fd == -1) {
         return ulcd_error(ulcd, errno, "Unable to open serial device: %s", strerror(errno));
-    } else {
-        fcntl(ulcd->fd, F_SETFL, 0);
     }
     return ERROK;
 }
@@ -225,27 +224,54 @@ ulcd_set_serial_parameters(struct ulcd_t *ulcd)
     cfsetospeed(&options, ulcd->baud_const);
 
     /* 8N1 */
-    options.c_cflag &= ~PARENB;
-    options.c_cflag &= ~CSTOPB;
-    options.c_cflag &= ~CSIZE;
-    options.c_cflag |= CS8;
-    options.c_cflag |= CREAD;
+    options.c_cflag &= ~(PARENB | PARODD | CSTOPB | CSIZE);
+    options.c_cflag |= (CS8 | CREAD | CLOCAL);
+    options.c_cflag &= ~CRTSCTS;
 
     /* Raw input */
-    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE | ECHONL | ISIG | IEXTEN);
 
     /* No flow control */
-    options.c_iflag |= IGNPAR;
+    //options.c_iflag |= IGNPAR;
     options.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+    /* Don't munge data */
+    options.c_iflag &= ~(ICRNL | IGNCR | INPCK | ISTRIP | ICRNL | IGNBRK);
 
     /* Raw output */
     options.c_oflag &= ~OPOST;
 
-    /* 0.5 second timeout */
+    /* Timeout handled by select() */
     options.c_cc[VMIN] = 0;
-    options.c_cc[VTIME] = 5;
+    options.c_cc[VTIME] = 0;
 
-    tcsetattr(ulcd->fd, TCSAFLUSH, &options);
+    tcsetattr(ulcd->fd, TCSANOW, &options);
+}
+
+static int
+ulcd_read_select(struct ulcd_t *ulcd, void *buf, size_t count)
+{
+    fd_set set;
+    struct timeval timeout;
+    int retval;
+
+    FD_ZERO(&set);
+    FD_SET(ulcd->fd, &set);
+
+    timeout.tv_sec = 0;
+    timeout.tv_usec = ulcd->timeout;
+
+    retval = select(FD_SETSIZE, &set, NULL, NULL, &timeout);
+
+    if (retval == 1) {
+        return read(ulcd->fd, buf, count);
+    } else if (retval == 0) {
+        ulcd_error(ulcd, ERRTIMEOUT, "Timed out while reading data from device");
+    } else {
+        ulcd_error(ulcd, ERRREAD, "Unable to read data from device: %s", strerror(errno));
+    }
+
+    return retval;
 }
 
 int
@@ -276,9 +302,9 @@ ulcd_recv(struct ulcd_t *ulcd, void *buffer, int size)
     size_t total = 0;
 
     while(total < size) {
-        bytes_read = read(ulcd->fd, buffer+total, size-total);
+        bytes_read = ulcd_read_select(ulcd, buffer+total, size-total);
         if (bytes_read <= 0) {
-            return ulcd_error(ulcd, ERRREAD, "Unable to read data from device: %s", strerror(errno));
+            return ulcd->error;
         }
         total += bytes_read;
     }
@@ -334,9 +360,9 @@ ulcd_send_recv_ack_data(struct ulcd_t *ulcd, const char *data, int size, void *b
     }
 
     while(total < datasize) {
-        bytes_read = read(ulcd->fd, buffer+total, datasize-total);
+        bytes_read = ulcd_read_select(ulcd, buffer+total, datasize-total);
         if (bytes_read <= 0) {
-            return ulcd_error(ulcd, errno, "Unable to read data from device: %s", strerror(errno));
+            return ulcd->error;
         }
         total += bytes_read;
     }
@@ -367,8 +393,8 @@ ulcd_send_recv_ack_word(struct ulcd_t *ulcd, const char *data, int size, param_t
 
 
 /**
- * Sending wrong commands to the uLCD43 may cause it to lock up. In order to
- * un-fuck it, we send zero-bytes until we get 0x06 0x00 0x09.
+ * Sending wrong commands to the uLCD43 may cause it to lock up or get out of
+ * sync. To fix it, we send zero-bytes until we get 0x06 0x00 0x09.
  */
 int
 ulcd_reset(struct ulcd_t *ulcd)
@@ -376,14 +402,8 @@ ulcd_reset(struct ulcd_t *ulcd)
     const char target[3] = { 0x06, 0x00, 0x09 };
     char rbuf[STRBUFSIZE];
     int pos = 0;
-    int tries;
 
-    for (tries = 0; tries < 10; tries++) {
-
-        if (ulcd_send(ulcd, "\0", 1)) {
-            return ulcd->error;
-        }
-
+    while(1) {
         while (!ulcd_recv(ulcd, rbuf, 1)) {
             if (!memcmp(rbuf, target+pos, 1)) {
                 if (++pos == 3) {
@@ -394,7 +414,9 @@ ulcd_reset(struct ulcd_t *ulcd)
                 pos = 0;
             }
         }
-    }
 
-    return ulcd_error(ulcd, ERRNORESET, "Could not reset device even after %d tries, so gave up.", tries);
+        if (ulcd_send(ulcd, "\0", 1)) {
+            return ulcd->error;
+        }
+    }
 }
